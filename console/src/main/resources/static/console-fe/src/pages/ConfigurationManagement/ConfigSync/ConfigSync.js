@@ -16,6 +16,7 @@ import PropTypes from 'prop-types';
 import { Button, Checkbox, ConfigProvider, Dialog, Field, Form, Input, Loading } from '@alifd/next';
 import SuccessDialog from '../../../components/SuccessDialog';
 import { getParams, request } from '../../../globalLib';
+import { generateUrl } from '../../../utils/nacosutil';
 
 import './index.scss';
 
@@ -193,7 +194,7 @@ class ConfigSync extends React.Component {
     const dataId = this.field.getValue('dataId');
     const gruop = this.field.getValue('group');
     this.props.history.push(
-      `/diamond-ops/static/pages/config-sync/index.html?serverId=center&dataId=${dataId}&group=${gruop}`
+      generateUrl('/diamond-ops/static/pages/config-sync/index.html', { dataId, gruop })
     );
   }
 
@@ -209,9 +210,8 @@ class ConfigSync extends React.Component {
   }
 
   goResult() {
-    this.props.history.push(
-      `/consistencyEfficacy?serverId=${this.serverId}&dataId=${this.dataId}&group=${this.group}`
-    );
+    const { serverId, dataId, group } = this;
+    this.props.history.push(generateUrl('/consistencyEfficacy', { serverId, dataId, group }));
   }
 
   openLoading() {

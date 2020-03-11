@@ -44,6 +44,9 @@ import ServiceList from './pages/ServiceManagement/ServiceList';
 import ServiceDetail from './pages/ServiceManagement/ServiceDetail';
 import SubscriberList from './pages/ServiceManagement/SubscriberList';
 import ClusterNodeList from './pages/ClusterManagement/ClusterNodeList';
+import UserManagement from './pages/AuthorityControl/UserManagement';
+import PermissionsManagement from './pages/AuthorityControl/PermissionsManagement';
+import RolesManagement from './pages/AuthorityControl/RolesManagement';
 import Welcome from './pages/Welcome/Welcome';
 
 import reducers from './reducers';
@@ -89,6 +92,9 @@ const MENU = [
   { path: '/serviceDetail', component: ServiceDetail },
   { path: '/subscriberList', component: SubscriberList },
   { path: '/clusterManagement', component: ClusterNodeList },
+  { path: '/userManagement', component: UserManagement },
+  { path: '/rolesManagement', component: RolesManagement },
+  { path: '/permissionsManagement', component: PermissionsManagement },
 ];
 
 @connect(
