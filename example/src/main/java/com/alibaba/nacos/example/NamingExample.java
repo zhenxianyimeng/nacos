@@ -29,7 +29,7 @@ import com.alibaba.nacos.api.naming.listener.NamingEvent;
  */
 public class NamingExample {
 
-    public static void main(String[] args) throws NacosException {
+    public static void main(String[] args) throws NacosException, InterruptedException {
 
         Properties properties = new Properties();
         properties.setProperty("serverAddr", System.getProperty("serverAddr"));
@@ -42,8 +42,9 @@ public class NamingExample {
         naming.registerInstance("nacos.test.3", "2.2.2.2", 9999, "DEFAULT");
 
         System.out.println(naming.getAllInstances("nacos.test.3"));
+        System.out.println("----------------------");
 
-        naming.deregisterInstance("nacos.test.3", "2.2.2.2", 9999, "DEFAULT");
+//        naming.deregisterInstance("nacos.test.3", "2.2.2.2", 9999, "DEFAULT");
 
         System.out.println(naming.getAllInstances("nacos.test.3"));
 
@@ -54,5 +55,6 @@ public class NamingExample {
                 System.out.println(((NamingEvent)event).getInstances());
             }
         });
+        Thread.sleep(3000000);
     }
 }

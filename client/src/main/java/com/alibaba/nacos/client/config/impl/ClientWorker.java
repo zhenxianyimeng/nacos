@@ -458,6 +458,7 @@ public class ClientWorker {
             }
         });
 
+        //当前任务结束之后，10ms再跑一次，检查配置信息
         executor.scheduleWithFixedDelay(new Runnable() {
             @Override
             public void run() {
@@ -548,6 +549,7 @@ public class ClientWorker {
 
                 // If the rotation training task is abnormal, the next execution time of the task will be punished
                 LOGGER.error("longPolling error : ", e);
+                //间隔2秒再次调用自己
                 executorService.schedule(this, taskPenaltyTime, TimeUnit.MILLISECONDS);
             }
         }

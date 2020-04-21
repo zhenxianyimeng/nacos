@@ -115,7 +115,7 @@ public class TaskDispatcher {
 
                     if (dataSize == partitionConfig.getBatchSyncKeyCount() ||
                         (System.currentTimeMillis() - lastDispatchTime) > partitionConfig.getTaskDispatchPeriod()) {
-
+                        //将数据在server中进行广播
                         for (Server member : dataSyncer.getServers()) {
                             if (NetUtils.localServer().equals(member.getKey())) {
                                 continue;

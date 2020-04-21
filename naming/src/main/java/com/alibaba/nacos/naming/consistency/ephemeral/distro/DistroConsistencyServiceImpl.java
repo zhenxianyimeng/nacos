@@ -52,7 +52,7 @@ import java.util.concurrent.*;
  * <p>
  * At mean time every Nacos server receives data sync of other Nacos server, so every Nacos
  * server will eventually have a complete set of data.
- *
+ * 类似 Eureka 的广播协议
  * @author nkorange
  * @since 1.0.0
  */

@@ -88,6 +88,7 @@ public class DataSyncer {
             return;
         }
 
+
         GlobalExecutor.submitDataSync(() -> {
             // 1. check the server
             if (getServers() == null || getServers().isEmpty()) {
@@ -115,6 +116,7 @@ public class DataSyncer {
             long timestamp = System.currentTimeMillis();
             boolean success = NamingProxy.syncData(data, task.getTargetServer());
             if (!success) {
+                //失败后重新进入队列
                 SyncTask syncTask = new SyncTask();
                 syncTask.setKeys(task.getKeys());
                 syncTask.setRetryCount(task.getRetryCount() + 1);

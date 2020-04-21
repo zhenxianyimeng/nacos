@@ -24,16 +24,22 @@ import org.springframework.stereotype.Service;
 
 /**
  * Consistency delegate
- *
+ * 一致性选择代理，根据是否是临时实例，选择ap或者cp
  * @author nkorange
  * @since 1.0.0
  */
 @Service("consistencyDelegate")
 public class DelegateConsistencyServiceImpl implements ConsistencyService {
 
+    /**
+     * raft，cp
+     */
     @Autowired
     private PersistentConsistencyService persistentConsistencyService;
 
+    /**
+     * Distro协议，有点像gossip，ap
+     */
     @Autowired
     private EphemeralConsistencyService ephemeralConsistencyService;
 

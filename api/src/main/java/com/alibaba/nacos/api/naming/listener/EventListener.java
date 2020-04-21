@@ -15,6 +15,8 @@
  */
 package com.alibaba.nacos.api.naming.listener;
 
+import com.alibaba.nacos.api.exception.NacosException;
+
 /**
  * Event Listener
  *
@@ -26,5 +28,5 @@ public interface EventListener {
      *
      * @param event
      */
-    void onEvent(Event event);
+    void onEvent(Event event) throws NacosException;
 }
