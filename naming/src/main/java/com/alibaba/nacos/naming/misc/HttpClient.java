@@ -19,6 +19,7 @@ import com.alibaba.nacos.common.constant.HttpHeaderConsts;
 import com.alibaba.nacos.common.utils.HttpMethod;
 import com.alibaba.nacos.common.utils.IoUtils;
 import com.alibaba.nacos.common.utils.VersionUtils;
+import com.alibaba.nacos.core.utils.ApplicationUtils;
 import com.ning.http.client.AsyncCompletionHandler;
 import com.ning.http.client.AsyncHttpClient;
 import com.ning.http.client.AsyncHttpClientConfig;
@@ -31,6 +32,7 @@ import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
@@ -99,7 +101,7 @@ public class HttpClient {
         HttpURLConnection conn = null;
         try {
             String encodedContent = encodingParams(paramValues, encoding);
-            url += (null == encodedContent) ? "" : ("?" + encodedContent);
+            url += StringUtils.isBlank(encodedContent) ? StringUtils.EMPTY : ("?" + encodedContent);
 
             conn = (HttpURLConnection) new URL(url).openConnection();
             conn.setConnectTimeout(connectTimeout);
@@ -109,6 +111,7 @@ public class HttpClient {
             setHeaders(conn, headers, encoding);
 
             if (StringUtils.isNotBlank(body)) {
+                conn.setDoOutput(true);
                 byte[] b = body.getBytes();
                 conn.setRequestProperty("Content-Length", String.valueOf(b.length));
                 conn.getOutputStream().write(b, 0, b.length);
@@ -257,7 +260,7 @@ public class HttpClient {
                 HeaderElement[] headerElements = entity.getContentType().getElements();
 
                 if (headerElements != null && headerElements.length > 0 && headerElements[0] != null &&
-                        headerElements[0].getParameterByName("charset") != null) {
+                    headerElements[0].getParameterByName("charset") != null) {
                     charset = headerElements[0].getParameterByName("charset").getValue();
                 }
             }
@@ -316,18 +319,16 @@ public class HttpClient {
 
     public static HttpResult httpPutLarge(String url, Map<String, String> headers, byte[] content) {
         try {
-            HttpClientBuilder builder = HttpClients.custom();
-            builder.setUserAgent(UtilsAndCommons.SERVER_VERSION);
-            builder.setConnectionTimeToLive(500, TimeUnit.MILLISECONDS);
-
+            HttpClientBuilder builder = HttpClients.custom()
+                .setUserAgent(UtilsAndCommons.SERVER_VERSION)
+                .setConnectionTimeToLive(500, TimeUnit.MILLISECONDS);
             CloseableHttpClient httpClient = builder.build();
-            HttpPut httpPut = new HttpPut(url);
 
+            HttpPut httpPut = new HttpPut(url);
             for (Map.Entry<String, String> entry : headers.entrySet()) {
                 httpPut.setHeader(entry.getKey(), entry.getValue());
             }
-
-            httpPut.setEntity(new StringEntity(new String(content, StandardCharsets.UTF_8), ContentType.create("application/json", StandardCharsets.UTF_8)));
+            httpPut.setEntity(new ByteArrayEntity(content, ContentType.APPLICATION_JSON));
 
             HttpResponse response = httpClient.execute(httpPut);
             HttpEntity entity = response.getEntity();
@@ -392,7 +393,7 @@ public class HttpClient {
             String charset = headerElements[0].getParameterByName("charset").getValue();
 
             return new HttpResult(response.getStatusLine().getStatusCode(),
-                    IoUtils.toString(entity.getContent(), charset), Collections.<String, String>emptyMap());
+                IoUtils.toString(entity.getContent(), charset), Collections.<String, String>emptyMap());
         } catch (Exception e) {
             return new HttpResult(500, e.toString(), Collections.<String, String>emptyMap());
         }
@@ -453,14 +454,15 @@ public class HttpClient {
         }
 
         conn.addRequestProperty("Content-Type", "application/x-www-form-urlencoded;charset="
-                + encoding);
+            + encoding);
         conn.addRequestProperty("Accept-Charset", encoding);
         conn.addRequestProperty(HttpHeaderConsts.CLIENT_VERSION_HEADER, VersionUtils.VERSION);
         conn.addRequestProperty(HttpHeaderConsts.USER_AGENT_HEADER, UtilsAndCommons.SERVER_VERSION);
+        conn.addRequestProperty(HttpHeaderConsts.REQUEST_SOURCE_HEADER, ApplicationUtils.getLocalAddress());
     }
 
     public static String encodingParams(Map<String, String> params, String encoding)
-            throws UnsupportedEncodingException {
+        throws UnsupportedEncodingException {
         StringBuilder sb = new StringBuilder();
         if (null == params || params.isEmpty()) {
             return null;

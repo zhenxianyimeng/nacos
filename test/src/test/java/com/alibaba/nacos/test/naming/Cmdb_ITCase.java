@@ -15,26 +15,16 @@
  */
 package com.alibaba.nacos.test.naming;
 
-import java.io.IOException;
-import java.net.HttpURLConnection;
-import java.net.URL;
-import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.TimeUnit;
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
+import com.alibaba.nacos.Nacos;
 import com.alibaba.nacos.api.common.Constants;
 import com.alibaba.nacos.api.naming.NamingFactory;
 import com.alibaba.nacos.api.naming.NamingService;
-
+import com.alibaba.nacos.common.utils.JacksonUtils;
 import com.alibaba.nacos.test.base.Params;
-import org.junit.Ignore;
-import org.springframework.http.HttpMethod;
-import com.alibaba.nacos.naming.NamingApp;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
+import org.junit.*;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -42,17 +32,24 @@ import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.web.server.LocalServerPort;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.io.IOException;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
 import static com.alibaba.nacos.test.naming.NamingBase.*;
 
 @RunWith(SpringRunner.class)
-@SpringBootTest(classes = NamingApp.class, properties = {"server.servlet.context-path=/nacos",
-    "server.port=7001"},
-    webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(classes = Nacos.class, properties = {"server.servlet.context-path=/nacos"},
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @Ignore
 public class Cmdb_ITCase {
 
@@ -104,14 +101,14 @@ public class Cmdb_ITCase {
 
         TimeUnit.SECONDS.sleep(5L);
 
-        JSONObject json = new JSONObject();
+        ObjectNode json = JacksonUtils.createEmptyJsonNode();
         json.put("type", "label");
         json.put("expression", "CONSUMER.label.label1 = PROVIDER.label.label1");
         ResponseEntity<String>  httpResult = request("/nacos/v1/ns/service",
             Params.newParams()
                 .appendParam("serviceName", serviceName)
                 .appendParam("protectThreshold", "0")
-                .appendParam("selector", json.toJSONString())
+                .appendParam("selector", json.toString())
                 .done(),
             String.class,
             HttpMethod.PUT);
@@ -125,8 +122,8 @@ public class Cmdb_ITCase {
             String.class,
             HttpMethod.GET);
         Assert.assertEquals(HttpURLConnection.HTTP_OK, httpResult.getStatusCodeValue());
-        json = JSON.parseObject(httpResult.getBody());
-        Assert.assertEquals(1, json.getJSONArray("hosts").size());
+        JsonNode result = JacksonUtils.toObj(httpResult.getBody());
+        Assert.assertEquals(1, result.get("hosts").size());
     }
 
 
@@ -154,14 +151,14 @@ public class Cmdb_ITCase {
 
         TimeUnit.SECONDS.sleep(10);
 
-        JSONObject json = new JSONObject();
+        ObjectNode json = JacksonUtils.createEmptyJsonNode();
         json.put("type", "label");
         json.put("expression", "CONSUMER.label.label1 = PROVIDER.label.label1");
         ResponseEntity<String>  httpResult = request("/nacos/v1/ns/service",
             Params.newParams()
                 .appendParam("serviceName", serviceName)
                 .appendParam("protectThreshold", "0")
-                .appendParam("selector", json.toJSONString())
+                .appendParam("selector", json.toString())
                 .done(),
             String.class,
             HttpMethod.PUT);
@@ -174,8 +171,8 @@ public class Cmdb_ITCase {
             String.class,
             HttpMethod.GET);
         Assert.assertEquals(HttpURLConnection.HTTP_OK, httpResult.getStatusCodeValue());
-        json = JSON.parseObject(httpResult.getBody());
-        Assert.assertEquals(6, json.getJSONArray("hosts").size());
+        JsonNode result = JacksonUtils.toObj(httpResult.getBody());
+        Assert.assertEquals(6, result.get("hosts").size());
     }
 
     /**
@@ -202,7 +199,7 @@ public class Cmdb_ITCase {
 
         TimeUnit.SECONDS.sleep(10);
 
-        JSONObject json = new JSONObject();
+        ObjectNode json = JacksonUtils.createEmptyJsonNode();
         json.put("type", "label");
         json.put("expression", "CONSUMER.label.label1 = PROVIDER.label.label1 & CONSUMER.label.label2 = PROVIDER.label.label2");
 
@@ -210,7 +207,7 @@ public class Cmdb_ITCase {
             Params.newParams()
                 .appendParam("serviceName", serviceName)
                 .appendParam("protectThreshold", "0")
-                .appendParam("selector", json.toJSONString())
+                .appendParam("selector", json.toString())
                 .done(),
             String.class,
             HttpMethod.PUT);
@@ -224,9 +221,9 @@ public class Cmdb_ITCase {
             String.class,
             HttpMethod.GET);
         Assert.assertEquals(HttpURLConnection.HTTP_OK, httpResult.getStatusCodeValue());
-        json = JSON.parseObject(httpResult.getBody());
-        System.out.println("instance list = " + json);
-        Assert.assertEquals(2, json.getJSONArray("hosts").size());
+        JsonNode result = JacksonUtils.toObj(httpResult.getBody());
+        System.out.println("instance list = " + result);
+        Assert.assertEquals(2, result.get("hosts").size());
     }
 
     /**
@@ -254,14 +251,14 @@ public class Cmdb_ITCase {
 
         TimeUnit.SECONDS.sleep(10);
 
-        JSONObject json = new JSONObject();
+        ObjectNode json = JacksonUtils.createEmptyJsonNode();
         json.put("type", "label");
         json.put("expression", "CONSUMER.label.label1 = PROVIDER.label.label1 & CONSUMER.label.label2 = PROVIDER.label.label2");
         ResponseEntity<String>  httpResult = request("/nacos/v1/ns/service",
             Params.newParams()
                 .appendParam("serviceName", serviceName)
                 .appendParam("protectThreshold", "0")
-                .appendParam("selector", json.toJSONString())
+                .appendParam("selector", json.toString())
                 .done(),
             String.class,
             HttpMethod.PUT);
@@ -274,7 +271,7 @@ public class Cmdb_ITCase {
                 .done(),
             String.class,
             HttpMethod.GET);
-        System.out.println("service list = " + JSON.parseObject(httpResult.getBody()));
+        System.out.println("service list = " + JacksonUtils.toObj(httpResult.getBody()));
 
         httpResult = request("/nacos/v1/ns/instance/list",
             Params.newParams()
@@ -284,10 +281,9 @@ public class Cmdb_ITCase {
             String.class,
             HttpMethod.GET);
         Assert.assertEquals(HttpURLConnection.HTTP_OK, httpResult.getStatusCodeValue());
-        json = JSON.parseObject(httpResult.getBody());
-
-        System.out.println("instance list = " + json);
-        Assert.assertEquals(2, json.getJSONArray("hosts").size());
+        JsonNode result = JacksonUtils.toObj(httpResult.getBody());
+        System.out.println("instance list = " + result);
+        Assert.assertEquals(2, result.get("hosts").size());
     }
 
 
@@ -316,14 +312,14 @@ public class Cmdb_ITCase {
 
         TimeUnit.SECONDS.sleep(10);
 
-        JSONObject json = new JSONObject();
+        ObjectNode json = JacksonUtils.createEmptyJsonNode();
         json.put("type", "label");
         json.put("expression", "CONSUMER.label.label1 = PROVIDER.label.label1 & CONSUMER.label.label2 = PROVIDER.label.label2");
         ResponseEntity<String>  httpResult = request("/nacos/v1/ns/service",
             Params.newParams()
                 .appendParam("serviceName", serviceName)
                 .appendParam("protectThreshold", "0")
-                .appendParam("selector", json.toJSONString())
+                .appendParam("selector", json.toString())
                 .done(),
             String.class,
             HttpMethod.PUT);
@@ -337,9 +333,9 @@ public class Cmdb_ITCase {
             String.class,
             HttpMethod.GET);
         Assert.assertEquals(HttpURLConnection.HTTP_OK, httpResult.getStatusCodeValue());
-        json = JSON.parseObject(httpResult.getBody());
-        System.out.println("instance list = " + json);
-        Assert.assertEquals(6, json.getJSONArray("hosts").size());
+        JsonNode result = JacksonUtils.toObj(httpResult.getBody());
+        System.out.println("instance list = " + result);
+        Assert.assertEquals(6, result.get("hosts").size());
     }
 
     /**
@@ -367,14 +363,14 @@ public class Cmdb_ITCase {
 
         TimeUnit.SECONDS.sleep(10);
 
-        JSONObject json = new JSONObject();
+        ObjectNode json = JacksonUtils.createEmptyJsonNode();
         json.put("type", "label");
         json.put("expression", "CONSUMER.label.label1 = PROVIDER.label.label1 & CONSUMER.label.label2 = PROVIDER.label.label2");
         ResponseEntity<String>  httpResult = request("/nacos/v1/ns/service",
             Params.newParams()
                 .appendParam("serviceName", serviceName)
                 .appendParam("protectThreshold", "0")
-                .appendParam("selector", json.toJSONString())
+                .appendParam("selector", json.toString())
                 .done(),
             String.class,
             HttpMethod.PUT);
@@ -388,10 +384,10 @@ public class Cmdb_ITCase {
             String.class,
             HttpMethod.GET);
         Assert.assertEquals(HttpURLConnection.HTTP_OK, httpResult.getStatusCodeValue());
-        json = JSON.parseObject(httpResult.getBody());
+        JsonNode result = JacksonUtils.toObj(httpResult.getBody());
 
-        System.out.println("instance list = " + json);
-        Assert.assertEquals(1, json.getJSONArray("hosts").size());
+        System.out.println("instance list = " + result);
+        Assert.assertEquals(1, result.get("hosts").size());
     }
 
     /**
@@ -420,7 +416,7 @@ public class Cmdb_ITCase {
 
         TimeUnit.SECONDS.sleep(10);
 
-        JSONObject json = new JSONObject();
+        ObjectNode json = JacksonUtils.createEmptyJsonNode();
         json.put("type", "label");
         json.put("expression", "CONSUMER.label.label1 = PROVIDER.label.label1 & CONSUMER.label.label2 = PROVIDER.label.label2");
         List<String> params = Arrays.asList("serviceName", serviceName, "protectThreshold", "0", "selector", json.toString());
@@ -430,7 +426,7 @@ public class Cmdb_ITCase {
             Params.newParams()
                 .appendParam("serviceName", serviceName)
                 .appendParam("protectThreshold", "0")
-                .appendParam("selector", json.toJSONString())
+                .appendParam("selector", json.toString())
                 .done(),
             String.class,
             HttpMethod.PUT);
@@ -444,9 +440,9 @@ public class Cmdb_ITCase {
             String.class,
             HttpMethod.GET);
         Assert.assertEquals(HttpURLConnection.HTTP_OK, httpResult.getStatusCodeValue());
-        json = JSON.parseObject(httpResult.getBody());
-        System.out.println("instance list = " + json);
-        Assert.assertEquals(1, json.getJSONArray("hosts").size());
+        JsonNode result = JacksonUtils.toObj(httpResult.getBody());
+        System.out.println("instance list = " + result);
+        Assert.assertEquals(1, json.get("hosts").size());
 
         httpResult = request("/nacos/v1/ns/service",
             Params.newParams()
@@ -466,10 +462,10 @@ public class Cmdb_ITCase {
             String.class,
             HttpMethod.GET);
         Assert.assertEquals(HttpURLConnection.HTTP_OK, httpResult.getStatusCodeValue());
-        json = JSON.parseObject(httpResult.getBody());
+        result = JacksonUtils.toObj(httpResult.getBody());
 
-        System.out.println("instance list = " + json);
-        Assert.assertEquals(6, json.getJSONArray("hosts").size());
+        System.out.println("instance list = " + result);
+        Assert.assertEquals(6, result.get("hosts").size());
     }
 
 
@@ -498,14 +494,14 @@ public class Cmdb_ITCase {
 
         TimeUnit.SECONDS.sleep(10);
 
-        JSONObject json = new JSONObject();
+        ObjectNode json = JacksonUtils.createEmptyJsonNode();
         json.put("type", "label");
         json.put("expression", "");
         ResponseEntity<String>  httpResult = request("/nacos/v1/ns/service",
             Params.newParams()
                 .appendParam("serviceName", serviceName)
                 .appendParam("protectThreshold", "0")
-                .appendParam("selector", json.toJSONString())
+                .appendParam("selector", json.toString())
                 .done(),
             String.class,
             HttpMethod.PUT);
@@ -519,9 +515,9 @@ public class Cmdb_ITCase {
             String.class,
             HttpMethod.GET);
         Assert.assertEquals(HttpURLConnection.HTTP_OK, httpResult.getStatusCodeValue());
-        json = JSON.parseObject(httpResult.getBody());
-        System.out.println("instance list = " + json);
-        Assert.assertEquals(6, json.getJSONArray("hosts").size());
+        JsonNode result = JacksonUtils.toObj(httpResult.getBody());
+        System.out.println("instance list = " + result);
+        Assert.assertEquals(6, result.get("hosts").size());
     }
 
     /**
@@ -550,14 +546,14 @@ public class Cmdb_ITCase {
 
         TimeUnit.SECONDS.sleep(10);
 
-        JSONObject json = new JSONObject();
+        ObjectNode json = JacksonUtils.createEmptyJsonNode();
         json.put("type", "label");
         json.put("expression", "");
         ResponseEntity<String>  httpResult = request("/nacos/v1/ns/service",
             Params.newParams()
                 .appendParam("serviceName", serviceName)
                 .appendParam("protectThreshold", "0")
-                .appendParam("selector", json.toJSONString())
+                .appendParam("selector", json.toString())
                 .done(),
             String.class,
             HttpMethod.PUT);
@@ -571,9 +567,9 @@ public class Cmdb_ITCase {
             String.class,
             HttpMethod.GET);
         Assert.assertEquals(HttpURLConnection.HTTP_OK, httpResult.getStatusCodeValue());
-        json = JSON.parseObject(httpResult.getBody());
-        System.out.println("instance list = " + json);
-        Assert.assertEquals(6, json.getJSONArray("hosts").size());
+        JsonNode result = JacksonUtils.toObj(httpResult.getBody());
+        System.out.println("instance list = " + result);
+        Assert.assertEquals(6, result.get("hosts").size());
     }
 
     /**
@@ -601,14 +597,14 @@ public class Cmdb_ITCase {
 
         TimeUnit.SECONDS.sleep(10);
 
-        JSONObject json = new JSONObject();
+        ObjectNode json = JacksonUtils.createEmptyJsonNode();
         json.put("type", "label1");
         json.put("expression", "CONSUMER.label.label1 = PROVIDER.label.label1 & CONSUMER.label.label2 = PROVIDER.label.label2");
         ResponseEntity<String>  httpResult = request("/nacos/v1/ns/service",
             Params.newParams()
                 .appendParam("serviceName", serviceName)
                 .appendParam("protectThreshold", "0")
-                .appendParam("selector", json.toJSONString())
+                .appendParam("selector", json.toString())
                 .done(),
             String.class,
             HttpMethod.PUT);

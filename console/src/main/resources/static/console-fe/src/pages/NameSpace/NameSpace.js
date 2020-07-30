@@ -13,7 +13,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
-import { Button, ConfigProvider, Dialog, Loading, Table, Icon } from '@alifd/next';
+import { Button, ConfigProvider, Dialog, Loading, Table } from '@alifd/next';
 import RegionGroup from '../../components/RegionGroup';
 import NewNameSpace from '../../components/NewNameSpace';
 import EditorNameSpace from '../../components/EditorNameSpace';
@@ -41,20 +41,19 @@ class NameSpace extends React.Component {
   }
 
   componentDidMount() {
-    this.getNameSpaces(undefined, undefined, 0);
+    this.getNameSpaces(0);
   }
 
-  getNameSpaces(sortField, sortOrder, delayTime = 2000) {
+  getNameSpaces(delayTime = 2000) {
     const { locale = {} } = this.props;
     const { prompt } = locale;
     const self = this;
     self.openLoading();
-    const param = sortOrder && sortField ? `?sortField=${sortField}&sortType=${sortOrder}` : '';
     setTimeout(() => {
       request({
         type: 'get',
         beforeSend() {},
-        url: 'v1/console/namespaces' + param,
+        url: 'v1/console/namespaces',
         success: res => {
           if (res.code === 200) {
             const data = res.data || [];
@@ -104,10 +103,6 @@ class NameSpace extends React.Component {
     this.setState({
       loading: false,
     });
-  }
-
-  onSort(dataIndex, order) {
-    this.getNameSpaces(dataIndex, order, 0);
   }
 
   detailNamespace(record) {
@@ -286,14 +281,6 @@ class NameSpace extends React.Component {
     return <div>{name}</div>;
   }
 
-  renderConfigCount(value, index, record) {
-    return (
-      <div>
-        {value} / {record.quota}
-      </div>
-    );
-  }
-
   render() {
     const { locale = {} } = this.props;
     const {
@@ -306,7 +293,7 @@ class NameSpace extends React.Component {
       namespaceOperation,
     } = locale;
     return (
-      <div style={{ padding: 10 }} className="clearfix">
+      <>
         <RegionGroup left={namespace} />
         <div className="fusion-demo">
           <Loading
@@ -327,24 +314,14 @@ class NameSpace extends React.Component {
                 </Button>
               </div>
               <div>
-                <Table
-                  dataSource={this.state.dataSource}
-                  locale={{ empty: pubNoData }}
-                  onSort={this.onSort.bind(this)}
-                >
+                <Table dataSource={this.state.dataSource} locale={{ empty: pubNoData }}>
                   <Table.Column
                     title={namespaceNames}
                     dataIndex="namespaceShowName"
                     cell={this.renderName.bind(this)}
-                    sortable
                   />
-                  <Table.Column title={namespaceNumber} dataIndex="namespace" sortable />
-                  <Table.Column
-                    title={configuration}
-                    dataIndex="configCount"
-                    cell={this.renderConfigCount.bind(this)}
-                  />
-
+                  <Table.Column title={namespaceNumber} dataIndex="namespace" />
+                  <Table.Column title={configuration} dataIndex="configCount" />
                   <Table.Column
                     title={namespaceOperation}
                     dataIndex="time"
@@ -353,12 +330,11 @@ class NameSpace extends React.Component {
                 </Table>
               </div>
             </div>
-
             <NewNameSpace ref={this.newnamespace} getNameSpaces={this.getNameSpaces.bind(this)} />
             <EditorNameSpace ref={this.editgroup} getNameSpaces={this.getNameSpaces.bind(this)} />
           </Loading>
         </div>
-      </div>
+      </>
     );
   }
 }

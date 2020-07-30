@@ -15,12 +15,10 @@
  */
 package com.alibaba.nacos.config.server.auth;
 
-import com.alibaba.nacos.api.common.Constants;
 import com.alibaba.nacos.core.auth.Resource;
 import com.alibaba.nacos.core.auth.ResourceParser;
-import org.apache.commons.lang3.StringUtils;
-
 import javax.servlet.http.HttpServletRequest;
+import org.apache.commons.lang3.StringUtils;
 
 /**
  * Config resource parser
@@ -39,24 +37,24 @@ public class ConfigResourceParser implements ResourceParser {
         String groupName = req.getParameter("group");
         String dataId = req.getParameter("dataId");
 
-        if (StringUtils.isBlank(namespaceId)) {
-            namespaceId = Constants.DEFAULT_NAMESPACE_ID;
-        }
-
         StringBuilder sb = new StringBuilder();
 
-        sb.append(namespaceId).append(Resource.SPLITTER);
+        if (StringUtils.isNotBlank(namespaceId)) {
+            sb.append(namespaceId);
+        }
+
+        sb.append(Resource.SPLITTER);
 
         if (StringUtils.isBlank(dataId)) {
             sb.append("*")
-                .append(Resource.SPLITTER)
-                .append(AUTH_CONFIG_PREFIX)
-                .append("*");
+                    .append(Resource.SPLITTER)
+                    .append(AUTH_CONFIG_PREFIX)
+                    .append("*");
         } else {
             sb.append(groupName)
-                .append(Resource.SPLITTER)
-                .append(AUTH_CONFIG_PREFIX)
-                .append(dataId);
+                    .append(Resource.SPLITTER)
+                    .append(AUTH_CONFIG_PREFIX)
+                    .append(dataId);
         }
 
         return sb.toString();

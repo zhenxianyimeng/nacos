@@ -15,13 +15,17 @@
  */
 package com.alibaba.nacos.core.auth;
 
+import java.io.Serializable;
+
 /**
  * Permission to auth
  *
  * @author nkorange
  * @since 1.2.0
  */
-public class Permission {
+public class Permission implements Serializable {
+
+    private static final long serialVersionUID = -3583076254743606551L;
 
     public Permission() {
 
@@ -56,5 +60,13 @@ public class Permission {
 
     public void setAction(String action) {
         this.action = action;
+    }
+
+    @Override
+    public String toString() {
+        return "Permission{" +
+            "resource='" + resource + '\'' +
+            ", action='" + action + '\'' +
+            '}';
     }
 }

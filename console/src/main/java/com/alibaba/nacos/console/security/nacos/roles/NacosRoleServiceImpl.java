@@ -28,10 +28,12 @@ import com.alibaba.nacos.core.auth.Permission;
 import com.alibaba.nacos.core.utils.Loggers;
 import io.jsonwebtoken.lang.Collections;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.mina.util.ConcurrentHashSet;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
+import javax.annotation.PostConstruct;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -45,7 +47,7 @@ import java.util.regex.Pattern;
 @Service
 public class NacosRoleServiceImpl {
 
-    public static final String GLOBAL_ADMIN_ROLE = "GLOBAL_ADMIN";
+    public static final String GLOBAL_ADMIN_ROLE = "ROLE_ADMIN";
 
     @Autowired
     private AuthConfigs authConfigs;
@@ -59,6 +61,8 @@ public class NacosRoleServiceImpl {
     @Autowired
     private PermissionPersistService permissionPersistService;
 
+    private Set<String> roleSet = new ConcurrentHashSet<>();
+
     private Map<String, List<RoleInfo>> roleInfoMap = new ConcurrentHashMap<>();
 
     private Map<String, List<PermissionInfo>> permissionInfoMap = new ConcurrentHashMap<>();
@@ -70,24 +74,25 @@ public class NacosRoleServiceImpl {
             if (roleInfoPage == null) {
                 return;
             }
-            Set<String> roleSet = new HashSet<>(16);
+            Set<String> tmpRoleSet = new HashSet<>(16);
             Map<String, List<RoleInfo>> tmpRoleInfoMap = new ConcurrentHashMap<>(16);
             for (RoleInfo roleInfo : roleInfoPage.getPageItems()) {
                 if (!tmpRoleInfoMap.containsKey(roleInfo.getUsername())) {
                     tmpRoleInfoMap.put(roleInfo.getUsername(), new ArrayList<>());
                 }
                 tmpRoleInfoMap.get(roleInfo.getUsername()).add(roleInfo);
-                roleSet.add(roleInfo.getRole());
+                tmpRoleSet.add(roleInfo.getRole());
             }
 
             Map<String, List<PermissionInfo>> tmpPermissionInfoMap = new ConcurrentHashMap<>(16);
-            for (String role : roleSet) {
+            for (String role : tmpRoleSet) {
                 Page<PermissionInfo> permissionInfoPage = permissionPersistService.getPermissions(role, 1, Integer.MAX_VALUE);
                 tmpPermissionInfoMap.put(role, permissionInfoPage.getPageItems());
             }
 
-            roleInfoMap = tmpRoleInfoMap;
-            permissionInfoMap = tmpPermissionInfoMap;
+            roleSet.addAll(tmpRoleSet);
+            roleInfoMap.putAll(tmpRoleInfoMap);
+            permissionInfoMap.putAll(tmpPermissionInfoMap);
         } catch (Exception e) {
             Loggers.AUTH.warn("[LOAD-ROLES] load failed", e);
         }
@@ -175,10 +180,14 @@ public class NacosRoleServiceImpl {
     }
 
     public void addRole(String role, String username) {
-        if (userDetailsService.getUser(username) == null) {
+        if (userDetailsService.getUserFromDatabase(username) == null) {
             throw new IllegalArgumentException("user '" + username + "' not found!");
         }
+        if (GLOBAL_ADMIN_ROLE.equals(role)) {
+            throw new IllegalArgumentException("role '" + GLOBAL_ADMIN_ROLE + "' is not permitted to create!");
+        }
         rolePersistService.addRole(role, username);
+        roleSet.add(role);
     }
 
     public void deleteRole(String role, String userName) {
@@ -186,8 +195,8 @@ public class NacosRoleServiceImpl {
     }
 
     public void deleteRole(String role) {
-
         rolePersistService.deleteRole(role);
+        roleSet.remove(role);
     }
 
     public Page<PermissionInfo> getPermissionsFromDatabase(String role, int pageNo, int pageSize) {
@@ -199,6 +208,9 @@ public class NacosRoleServiceImpl {
     }
 
     public void addPermission(String role, String resource, String action) {
+        if (!roleSet.contains(role)) {
+            throw new IllegalArgumentException("role " + role + " not found!");
+        }
         permissionPersistService.addPermission(role, resource, action);
     }
 

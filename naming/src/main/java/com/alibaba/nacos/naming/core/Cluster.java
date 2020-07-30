@@ -15,11 +15,12 @@
  */
 package com.alibaba.nacos.naming.core;
 
-import com.alibaba.fastjson.annotation.JSONField;
 import com.alibaba.nacos.naming.healthcheck.HealthCheckReactor;
 import com.alibaba.nacos.naming.healthcheck.HealthCheckStatus;
 import com.alibaba.nacos.naming.healthcheck.HealthCheckTask;
 import com.alibaba.nacos.naming.misc.Loggers;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.Assert;
@@ -43,19 +44,19 @@ public class Cluster extends com.alibaba.nacos.api.naming.pojo.Cluster implement
 
     private int defIPPort = -1;
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     private HealthCheckTask checkTask;
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     private Set<Instance> persistentInstances = new HashSet<>();
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     private Set<Instance> ephemeralInstances = new HashSet<>();
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     private Service service;
 
-    @JSONField(serialize = false)
+    @JsonIgnore
     private volatile boolean inited = false;
 
     private Map<String, String> metadata = new ConcurrentHashMap<>();
@@ -118,6 +119,7 @@ public class Cluster extends com.alibaba.nacos.api.naming.pojo.Cluster implement
         }
     }
 
+    @JsonIgnore
     public HealthCheckTask getHealthCheckTask() {
         return checkTask;
     }
@@ -179,6 +181,10 @@ public class Cluster extends com.alibaba.nacos.api.naming.pojo.Cluster implement
         cluster.checkTask = null;
         cluster.metadata = new HashMap<>(metadata);
         return cluster;
+    }
+
+    public boolean isEmpty() {
+        return ephemeralInstances.isEmpty() && persistentInstances.isEmpty();
     }
 
     public void updateIPs(List<Instance> ips, boolean ephemeral) {

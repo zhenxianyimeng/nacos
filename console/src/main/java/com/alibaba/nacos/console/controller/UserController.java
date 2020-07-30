@@ -15,17 +15,21 @@
  */
 package com.alibaba.nacos.console.controller;
 
-import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.api.common.Constants;
-import com.alibaba.nacos.config.server.model.RestResult;
+import com.alibaba.nacos.common.model.RestResult;
+import com.alibaba.nacos.common.utils.JacksonUtils;
+import com.alibaba.nacos.config.server.auth.RoleInfo;
 import com.alibaba.nacos.config.server.model.User;
 import com.alibaba.nacos.console.security.nacos.NacosAuthConfig;
 import com.alibaba.nacos.console.security.nacos.NacosAuthManager;
+import com.alibaba.nacos.console.security.nacos.roles.NacosRoleServiceImpl;
 import com.alibaba.nacos.console.security.nacos.users.NacosUser;
 import com.alibaba.nacos.console.security.nacos.users.NacosUserDetailsServiceImpl;
 import com.alibaba.nacos.console.utils.JwtTokenUtils;
 import com.alibaba.nacos.console.utils.PasswordEncoderUtil;
 import com.alibaba.nacos.core.auth.*;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -37,6 +41,7 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import java.util.List;
 
 /**
  * User related methods entry
@@ -56,6 +61,9 @@ public class UserController {
 
     @Autowired
     private NacosUserDetailsServiceImpl userDetailsService;
+
+    @Autowired
+    private NacosRoleServiceImpl roleService;
 
     @Autowired
     private AuthConfigs authConfigs;
@@ -94,7 +102,14 @@ public class UserController {
     @DeleteMapping
     @Secured(resource = NacosAuthConfig.CONSOLE_RESOURCE_NAME_PREFIX + "users", action = ActionTypes.WRITE)
     public Object deleteUser(@RequestParam String username) {
-
+        List<RoleInfo> roleInfoList = roleService.getRoles(username);
+        if (roleInfoList != null) {
+            for (RoleInfo roleInfo : roleInfoList) {
+                if (roleInfo.getRole().equals(NacosRoleServiceImpl.GLOBAL_ADMIN_ROLE)) {
+                    throw new IllegalArgumentException("cannot delete admin: " + username);
+                }
+            }
+        }
         userDetailsService.deleteUser(username);
         return new RestResult<>(200, "delete user ok!");
     }
@@ -159,7 +174,8 @@ public class UserController {
             response.addHeader(NacosAuthConfig.AUTHORIZATION_HEADER,
                 NacosAuthConfig.TOKEN_PREFIX + user.getToken());
 
-            JSONObject result = new JSONObject();
+            ObjectNode result = JacksonUtils.createEmptyJsonNode();
+//            JSONObject result = new JSONObject();
             result.put(Constants.ACCESS_TOKEN, user.getToken());
             result.put(Constants.TOKEN_TTL, authConfigs.getTokenValidityInSeconds());
             result.put(Constants.GLOBAL_ADMIN, user.isGlobalAdmin());

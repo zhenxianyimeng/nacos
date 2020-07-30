@@ -15,23 +15,20 @@
  */
 package com.alibaba.nacos.client.security;
 
-
-import com.alibaba.fastjson.JSON;
-import com.alibaba.fastjson.JSONObject;
 import com.alibaba.nacos.api.PropertyKeyConst;
 import com.alibaba.nacos.api.common.Constants;
 import com.alibaba.nacos.client.naming.net.HttpClient;
 import com.alibaba.nacos.common.utils.HttpMethod;
+import com.alibaba.nacos.common.utils.JacksonUtils;
+import com.fasterxml.jackson.databind.JsonNode;
+
 import org.apache.commons.codec.Charsets;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.HttpURLConnection;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Properties;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -87,6 +84,7 @@ public class SecurityProxy {
         username = properties.getProperty(PropertyKeyConst.USERNAME, StringUtils.EMPTY);
         password = properties.getProperty(PropertyKeyConst.PASSWORD, StringUtils.EMPTY);
         contextPath = properties.getProperty(PropertyKeyConst.CONTEXT_PATH, "/nacos");
+        contextPath = contextPath.startsWith("/") ? contextPath : "/" + contextPath;
     }
 
     public boolean login(List<String> servers) {
@@ -102,7 +100,7 @@ public class SecurityProxy {
                     return true;
                 }
             }
-        } catch (Throwable t) {
+        } catch (Throwable ignore) {
         }
 
         return false;
@@ -111,7 +109,9 @@ public class SecurityProxy {
     public boolean login(String server) {
 
         if (StringUtils.isNotBlank(username)) {
-            String body = "username=" + username + "&password=" + password;
+            Map<String, String> params = new HashMap<String, String>(2);
+            params.put("username", username);
+            String body = "password=" + password;
             String url = "http://" + server + contextPath + LOGIN_URL;
 
             if (server.contains(Constants.HTTP_PREFIX)) {
@@ -119,17 +119,17 @@ public class SecurityProxy {
             }
 
             HttpClient.HttpResult result = HttpClient.request(url, new ArrayList<String>(2),
-                new HashMap<String, String>(2), body, Charsets.UTF_8.name(), HttpMethod.POST);
+                params, body, Charsets.UTF_8.name(), HttpMethod.POST);
 
             if (result.code != HttpURLConnection.HTTP_OK) {
-                SECURITY_LOGGER.error("login failed: {}", JSON.toJSONString(result));
+                SECURITY_LOGGER.error("login failed: {}", JacksonUtils.toJson(result));
                 return false;
             }
 
-            JSONObject obj = JSON.parseObject(result.content);
-            if (obj.containsKey(Constants.ACCESS_TOKEN)) {
-                accessToken = obj.getString(Constants.ACCESS_TOKEN);
-                tokenTtl = obj.getIntValue(Constants.TOKEN_TTL);
+            JsonNode obj = JacksonUtils.toObj(result.content);
+            if (obj.has(Constants.ACCESS_TOKEN)) {
+                accessToken = obj.get(Constants.ACCESS_TOKEN).asText();
+                tokenTtl = obj.get(Constants.TOKEN_TTL).asInt();
                 tokenRefreshWindow = tokenTtl / 10;
             }
         }

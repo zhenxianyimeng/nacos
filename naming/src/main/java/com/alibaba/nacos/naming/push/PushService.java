@@ -15,9 +15,8 @@
  */
 package com.alibaba.nacos.naming.push;
 
-import com.alibaba.fastjson.JSON;
-import com.alibaba.nacos.api.common.Constants;
 import com.alibaba.nacos.api.naming.utils.NamingUtils;
+import com.alibaba.nacos.common.utils.JacksonUtils;
 import com.alibaba.nacos.naming.core.Service;
 import com.alibaba.nacos.naming.misc.Loggers;
 import com.alibaba.nacos.naming.misc.SwitchDomain;
@@ -39,7 +38,6 @@ import java.net.DatagramPacket;
 import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.*;
@@ -317,8 +315,6 @@ public class PushService implements ApplicationContextAware, ApplicationListener
         try {
             packet = new DatagramPacket(dataBytes, dataBytes.length, client.socketAddr);
             Receiver.AckEntry ackEntry = new Receiver.AckEntry(key, packet);
-            ackEntry.data = data;
-
             // we must store the key be fore send, otherwise there will be a chance the
             // ack returns before we put in
             ackEntry.data = data;
@@ -557,7 +553,7 @@ public class PushService implements ApplicationContextAware, ApplicationListener
             client.getSocketAddr().getPort(),
             lastRefTime);
 
-        String dataStr = JSON.toJSONString(data);
+        String dataStr = JacksonUtils.toJson(data);
 
         try {
             byte[] dataBytes = dataStr.getBytes(StandardCharsets.UTF_8);
@@ -649,8 +645,8 @@ public class PushService implements ApplicationContextAware, ApplicationListener
                 try {
                     udpSocket.receive(packet);
 
-                    String json = new String(packet.getData(), 0, packet.getLength(), Charset.forName("UTF-8")).trim();
-                    AckPacket ackPacket = JSON.parseObject(json, AckPacket.class);
+                    String json = new String(packet.getData(), 0, packet.getLength(), StandardCharsets.UTF_8).trim();
+                    AckPacket ackPacket = JacksonUtils.toObj(json, AckPacket.class);
 
                     InetSocketAddress socketAddress = (InetSocketAddress) packet.getSocketAddress();
                     String ip = socketAddress.getAddress().getHostAddress();
@@ -669,7 +665,7 @@ public class PushService implements ApplicationContextAware, ApplicationListener
 
                     long pushCost = System.currentTimeMillis() - udpSendTimeMap.get(ackKey);
 
-                    Loggers.PUSH.info("received ack: {} from: {}:, cost: {} ms, unacked: {}, total push: {}",
+                    Loggers.PUSH.info("received ack: {} from: {}:{}, cost: {} ms, unacked: {}, total push: {}",
                         json, ip, port, pushCost, ackMap.size(), totalPush);
 
                     pushCostMap.put(ackKey, pushCost);

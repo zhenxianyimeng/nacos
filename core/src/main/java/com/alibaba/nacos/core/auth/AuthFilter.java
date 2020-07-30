@@ -17,7 +17,7 @@ package com.alibaba.nacos.core.auth;
 
 import com.alibaba.nacos.core.code.ControllerMethodsCache;
 import com.alibaba.nacos.core.utils.Constants;
-import com.alibaba.nacos.core.utils.ExceptionUtil;
+import com.alibaba.nacos.common.utils.ExceptionUtil;
 import com.alibaba.nacos.core.utils.Loggers;
 import com.alibaba.nacos.core.utils.WebUtils;
 import org.apache.commons.lang3.StringUtils;
@@ -62,12 +62,8 @@ public class AuthFilter implements Filter {
         String userAgent = WebUtils.getUserAgent(req);
 
         if (StringUtils.startsWith(userAgent, Constants.NACOS_SERVER_HEADER)) {
-            chain.doFilter(req, resp);
+            chain.doFilter(request, response);
             return;
-        }
-
-        if (Loggers.AUTH.isDebugEnabled()) {
-            Loggers.AUTH.debug("auth filter start, request: {}", req.getRequestURI());
         }
 
         try {
@@ -76,10 +72,15 @@ public class AuthFilter implements Filter {
             Method method = methodsCache.getMethod(req.getMethod(), path);
 
             if (method == null) {
-                throw new NoSuchMethodException();
+                chain.doFilter(request, response);
+                return;
             }
 
             if (method.isAnnotationPresent(Secured.class) && authConfigs.isAuthEnabled()) {
+
+                if (Loggers.AUTH.isDebugEnabled()) {
+                    Loggers.AUTH.debug("auth start, request: {} {}", req.getMethod(), req.getRequestURI());
+                }
 
                 Secured secured = method.getAnnotation(Secured.class);
                 String action = secured.action().toString();
@@ -98,13 +99,12 @@ public class AuthFilter implements Filter {
                 authManager.auth(new Permission(resource, action), authManager.login(req));
 
             }
-
+            chain.doFilter(request, response);
         } catch (AccessException e) {
+            if (Loggers.AUTH.isDebugEnabled()) {
+                Loggers.AUTH.debug("access denied, request: {} {}, reason: {}", req.getMethod(), req.getRequestURI(), e.getErrMsg());
+            }
             resp.sendError(HttpServletResponse.SC_FORBIDDEN, e.getErrMsg());
-            return;
-        } catch (NoSuchMethodException e) {
-            resp.sendError(HttpServletResponse.SC_NOT_IMPLEMENTED,
-                "no such api:" + req.getMethod() + ":" + req.getRequestURI());
             return;
         } catch (IllegalArgumentException e) {
             resp.sendError(HttpServletResponse.SC_BAD_REQUEST, ExceptionUtil.getAllExceptionMsg(e));
@@ -113,7 +113,5 @@ public class AuthFilter implements Filter {
             resp.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, "Server failed," + e.getMessage());
             return;
         }
-
-        chain.doFilter(request, response);
     }
 }
